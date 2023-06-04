@@ -5,7 +5,6 @@ RUN mkdir /project
 WORKDIR /project
 COPY ./requirements.txt ./
 COPY fcfb/. /fcfb/
-RUN mkdir /fcfb/graphics/scorebugs
 
 # Install everything
 RUN apt-get install libmariadb3 libmariadb-dev

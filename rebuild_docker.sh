@@ -16,6 +16,6 @@ docker build -t "fcfb-porygon-bot:porygon_bot.Dockerfile" . -f porygon_bot.Docke
 echo NEW PORYGON BOT BUILT!
 echo
 echo STARTING NEW PORYGON BOT...
-docker run -d --restart=always --name FCFB-Porygon-Bot -v /home/apkick/fcfb_scorebugs/:/project/../fcfb/graphics/scorebugs -v /home/apkick/fcfb_win_probability/:/project/../fcfb/graphics/win_probability fcfb-porygon-bot:porygon_bot.Dockerfile
+docker run -d --restart=always --name FCFB-Porygon-Botg fcfb-porygon-bot:porygon_bot.Dockerfile
 echo NEW PORYGON BOT STARTED!
 echo DONE!
