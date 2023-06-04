@@ -1,5 +1,7 @@
 import sys
 
+import pathlib
+
 from fcfb.discord.discord_utils import create_ongoing_game_message
 
 sys.path.append("..")
@@ -19,6 +21,9 @@ async def handle_commands(config_data, prefix, message, logger):
     """
 
     message_content = message.content.lower()
+
+    proj_dir = str(pathlib.Path(__file__).parent.absolute().parent.absolute())
+    logger.debug(proj_dir)
 
     # Handle ongoing games
     if message_content.startswith(prefix + 'score'):
