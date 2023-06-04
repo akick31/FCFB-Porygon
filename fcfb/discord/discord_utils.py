@@ -52,6 +52,8 @@ async def create_ongoing_game_message(message, game_info):
 
     scorebug = game_info[25]
 
+    scorebug = "/project/../fcfb/graphics/scorebugs/" + scorebug.split("fcfb_scorebugs/")[1]
+
     with open(scorebug, 'rb') as fp:
         file = discord.File(fp, 'posted_scorebug.png')
         embed.set_image(url="attachment://posted_scorebug.png")
