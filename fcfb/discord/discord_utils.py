@@ -62,3 +62,24 @@ async def create_ongoing_game_message(message, game_info):
     await message.channel.send(embed=embed, file=file)
 
     print("Comment posted for " + home_team + " vs " + away_team + "\n\n")
+
+
+async def create_plot_message(message, game_info):
+    """
+    Create the plot message to be posted to Discord
+
+    :param message:
+    :param game_info:
+    :return:
+    """
+
+    home_team = game_info[1]
+    away_team = game_info[2]
+    wp_chart = game_info[33]
+
+    wp_chart = "/project/../fcfb/graphics/win_probability/" + wp_chart.split("fcfb_win_probability/")[1]
+
+    with open(wp_chart, 'rb') as fp:
+        await message.channel.send(file=discord.File(fp, 'new_win_probability.png'))
+
+    print("Plot posted for " + home_team + " vs " + away_team + "\n\n")

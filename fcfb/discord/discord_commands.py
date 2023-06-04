@@ -1,8 +1,6 @@
 import sys
 
-import pathlib
-
-from fcfb.discord.discord_utils import create_ongoing_game_message
+from fcfb.discord.discord_utils import create_ongoing_game_message, create_plot_message
 
 sys.path.append("..")
 
@@ -22,18 +20,35 @@ async def handle_commands(config_data, prefix, message, logger):
 
     message_content = message.content.lower()
 
-    proj_dir = str(pathlib.Path(__file__).parent.absolute().parent.absolute())
-    logger.debug(proj_dir)
-
-    # Handle ongoing games
+    # Handle ongoing games score command
     if message_content.startswith(prefix + 'score'):
         team = message_content.split('score')[1].strip()
-        game_info = await retrieve_row_from_table(config_data, "ongoing_games", "home_team", team, logger)
-        if not game_info:
-            game_info = await retrieve_row_from_table(config_data, "ongoing_games", "away_team", team, logger)
-            if not game_info:
-                await message.channel.send("**ALERT: No ongoing game found for " + team + "**")
-                return
-
-        game_info = game_info[0]
+        game_info = await find_ongoing_game(config_data, team, message, logger)
         await create_ongoing_game_message(message, game_info)
+
+    elif message_content.startswith(prefix + 'plot'):
+        team = message_content.split('plot')[1].strip()
+        game_info = await find_ongoing_game(config_data, team, message, logger)
+        await create_plot_message(message, game_info)
+
+
+async def find_ongoing_game(config_data, team, message, logger):
+    """
+    Find ongoing game for a team
+
+    :param config_data:
+    :param team:
+    :param message:
+    :param logger:
+    :return:
+    """
+
+    game_info = await retrieve_row_from_table(config_data, "ongoing_games", "home_team", team, logger)
+    if not game_info:
+        game_info = await retrieve_row_from_table(config_data, "ongoing_games", "away_team", team, logger)
+        if not game_info:
+            await message.channel.send("**ALERT: No ongoing game found for " + team + "**")
+            return
+
+    game_info = game_info[0]
+    return game_info
