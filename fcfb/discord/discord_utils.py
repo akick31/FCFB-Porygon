@@ -1,6 +1,8 @@
 import discord
 import sys
 
+import pathlib
+
 sys.path.append("..")
 
 from fcfb.utils.vegas_odds import get_vegas_odds
@@ -51,6 +53,9 @@ async def create_ongoing_game_message(message, game_info):
     embed.add_field(name="**Win Probability**", value=win_percentage_msg, inline=False)
 
     scorebug = game_info[25]
+
+    proj_dir = str(pathlib.Path(__file__).parent.absolute().parent.absolute())
+    print(proj_dir)
 
     with open(scorebug, 'rb') as fp:
         file = discord.File(fp, 'posted_scorebug.png')
