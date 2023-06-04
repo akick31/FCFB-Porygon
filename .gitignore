@@ -1,0 +1,9 @@
+/__pycache__/
+/configuration/
+
+# Sensitive or high-churn files:
+*.json
+*.xlsx
+/fcfb/configuration/config.json
+/fcfb/configuration/FCFBRollCallBot-2d263a255851.json
+/fcfb/configuration/FCSElo.xlsx

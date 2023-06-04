@@ -7,6 +7,9 @@
 /dataSources/
 /dataSources.local.xml
 
+/__pycache__/
+/configuration/
+
 # Sensitive or high-churn files:
 *.json
 *.xlsx
