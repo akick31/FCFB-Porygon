@@ -26,3 +26,4 @@ pyimgur==0.6.0
 Pillow==9.5.0
 matplotlib==3.7.1
 numpy==1.24.2
+gspread==4.0.1
