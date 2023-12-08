@@ -12,7 +12,7 @@ RUN apt-get install -y default-libmysqlclient-dev
 RUN apt-get install -y libmariadb-dev-compat
 RUN apt-get install -y libmariadb-dev
 RUN pip install -r requirements.txt
-ADD fcfb/main/porygon_bot.py /
+ADD fcfb/main/porygon.py /
 
 # Run
 CMD [ "python", "/fcfb/main/porygon_bot.py" ]
