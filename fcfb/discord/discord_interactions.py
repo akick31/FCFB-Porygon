@@ -113,9 +113,9 @@ async def get_channel_by_id(client, channel_id):
     """
 
     try:
-        thread = client.get_channel(int(channel_id))
-        if thread is None:
+        channel = client.get_channel(int(channel_id))
+        if channel is None:
             raise DiscordAPIError(f"Channel with ID {channel_id} not found")
-        return thread
+        return channel
     except Exception as e:
         raise DiscordAPIError(f"There was an issue getting the channel by its ID, {e}")

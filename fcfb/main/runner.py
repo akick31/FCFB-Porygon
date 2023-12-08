@@ -33,8 +33,8 @@ def run_porygon_bot():
         try:
             await crawl()
         except Exception as e:
-            channel = await get_channel_by_id(client, config_data["error_channel_id"])
-            await create_message(channel, f"{e}")
+            channel = await get_channel_by_id(client, config_data["discord"]["log_channel_id"])
+            await create_message(channel, f"REDDIT CRAWLER ERROR: {e}")
             logger.error(f"{e}")
 
     # @client.event
