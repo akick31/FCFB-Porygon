@@ -9,7 +9,7 @@ wiki_page = subreddit.wiki["games"]
 
 
 @async_exception_handler()
-async def crawl():
+async def get_ongoing_games():
     try:
         # Exclude header and footer
         table_rows = wiki_page.content_md.split('\n')[3:-2]

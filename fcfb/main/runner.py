@@ -4,7 +4,7 @@ from discord.ext import tasks
 from fcfb.discord.discord_interactions import create_message, get_channel_by_id
 from fcfb.utils.exception_handling import async_exception_handler
 from fcfb.utils.setup import setup
-from fcfb.reddit.wiki.crawl_game_wiki import crawl
+from fcfb.reddit.reddit_game_crawler import ongoing_game_crawler
 
 config_data, r, logger = setup()
 
@@ -13,8 +13,6 @@ def run_porygon_bot():
     """
     Run Porygon bot
 
-    :param config_data:
-    :param logger:
     :return:
     """
 
@@ -31,10 +29,10 @@ def run_porygon_bot():
     @async_exception_handler()
     async def reddit_crawler():
         try:
-            await crawl()
+            await ongoing_game_crawler(client)
         except Exception as e:
             channel = await get_channel_by_id(client, config_data["discord"]["log_channel_id"])
-            await create_message(channel, f"REDDIT CRAWLER ERROR: {e}")
+            await create_message(channel, f"ERROR: {e}")
             logger.error(f"{e}")
 
     # @client.event

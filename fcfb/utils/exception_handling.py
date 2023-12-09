@@ -17,6 +17,10 @@ class GameError(Exception):
     pass
 
 
+class GistAPIError(Exception):
+    pass
+
+
 class InvalidParameterError(ValueError):
     pass
 
@@ -39,6 +43,10 @@ def async_exception_handler():
                 error_message = f"Reddit API error in {func.__name__}(): {re}"
                 logger.error(error_message)
                 raise re
+            except GistAPIError as ge:
+                error_message = f"Gist API error in {func.__name__}(): {ge}"
+                logger.error(error_message)
+                raise ge
             except InvalidParameterError as ipe:
                 error_message = f"Invalid parameter error in {func.__name__}(): {ipe}"
                 logger.error(error_message)
