@@ -1,11 +1,14 @@
+import json
+from fcfb.api.deoxys.games import save_game
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
 from fcfb.utils.exception_handling import async_exception_handler
 from fcfb.utils.setup import setup
 from fcfb.reddit.wiki.crawl_game_wiki import get_ongoing_games
-from fcfb.reddit.game_threads.game_data import extract_playbook_and_coaches, extract_game_state_info, extract_team_stats, \
+from fcfb.reddit.game_threads.game_data import extract_team_info, extract_game_state_info, extract_team_stats, \
     extract_waiting_on_and_gist
 from fcfb.gist.play_gist import extract_plays_from_gist
 from fcfb.api.deoxys.game_plays import save_play
+from fcfb.stats.game_stats import calculate_game_stats
 
 config_data, r, logger = setup()
 subreddit = r.subreddit(config_data['reddit']['subreddit'])
@@ -24,6 +27,11 @@ async def ongoing_game_crawler(client):
         game_list = await get_ongoing_games()
         for game in game_list:
             await extract_game_info_and_save(client, game)
+
+        # TODO: Go through the list of games added that are not marked as finished, get the game id, verify that the game isn't over
+        # If the game is over, mark it as finished in the database and finish updating the gist
+
+        # TODO: When the game is over, update the team stats
     except Exception as e:
         raise Exception(f"{e}")
 
@@ -38,9 +46,9 @@ async def extract_game_info_and_save(client, game):
     """
 
     try:
-        game_thread_url = game["Thread"]
-        home_team = game["Home"]
-        away_team = game["Away"]
+        game_thread_url = game["thread"]
+        home_team = game["home"]
+        away_team = game["away"]
 
         # Gather info from the game thread
         # Get the game thread
@@ -51,7 +59,7 @@ async def extract_game_info_and_save(client, game):
         game_id = game_thread.id
 
         # Extract the playbook and coaches
-        playbook_and_coaches = extract_playbook_and_coaches(game_thread_text)
+        team_info = extract_team_info(game_thread_text)
 
         # Extract the team stats
         team_stats = extract_team_stats(game_thread_text)
@@ -62,7 +70,7 @@ async def extract_game_info_and_save(client, game):
         # Extract the waiting on and gist
         waiting_on_and_gist = extract_waiting_on_and_gist(game_thread_text)
 
-        if playbook_and_coaches is None or team_stats is None or game_state_info is None or waiting_on_and_gist is None:
+        if team_info is None or team_stats is None or game_state_info is None or waiting_on_and_gist is None:
             message = f"Failed to extract information from {game_thread}, skipping to the next game"
             logger.info(message)
             channel = await get_channel_by_id(client, config_data["discord"]["log_channel_id"])
@@ -73,380 +81,47 @@ async def extract_game_info_and_save(client, game):
         gist_url = waiting_on_and_gist["gist_link"]
         plays = await extract_plays_from_gist(gist_url, home_team, away_team, game_id)
 
-        # Gather the stats from the plays
-        home_total_diff_on_offense = 0
-        home_total_diff_on_defense = 0
-        away_total_diff_on_offense = 0
-        away_total_diff_on_defense = 0
-        home_field_goal_attempts = 0
-        home_field_goals_made = 0
-        home_field_goal_percentage = 0
-        away_field_goal_attempts = 0
-        away_field_goals_made = 0
-        away_field_goal_percentage = 0
-        home_longest_field_goal = 0
-        away_longest_field_goal = 0
-        home_longest_touchdown = 0
-        away_longest_touchdown = 0
-        home_passing_attempts = 0
-        home_passing_completions = 0
-        home_passing_percentage = 0
-        away_passing_attempts = 0
-        away_passing_completions = 0
-        away_passing_percentage = 0
-        home_rushing_attempts = 0
-        home_rushing_success = 0
-        home_rushing_percentage = 0
-        away_rushing_attempts = 0
-        away_rushing_success = 0
-        away_rushing_percentage = 0
-        home_third_down_attempts = 0
-        home_third_down_success = 0
-        home_third_down_percentage = 0
-        away_third_down_attempts = 0
-        away_third_down_success = 0
-        away_third_down_percentage = 0
-        home_fourth_down_attempts = 0
-        home_fourth_down_success = 0
-        home_fourth_down_percentage = 0
-        away_fourth_down_attempts = 0
-        away_fourth_down_success = 0
-        away_fourth_down_percentage = 0
-        home_two_point_attempts = 0
-        home_two_point_success = 0
-        home_two_point_percentage = 0
-        away_two_point_attempts = 0
-        away_two_point_success = 0
-        away_two_point_percentage = 0
-        home_onside_kick_attempts = 0
-        home_onside_kick_success = 0
-        home_onside_kick_percentage = 0
-        away_onside_kick_attempts = 0
-        away_onside_kick_success = 0
-        away_onside_kick_percentage = 0
-        home_total_plays = 0
-        home_offensive_plays = 0
-        home_defensive_plays = 0
-        away_total_plays = 0
-        away_offensive_plays = 0
-        away_defensive_plays = 0
-        home_turnovers = 0
-        home_fumbles = 0
-        home_interceptions = 0
-        away_turnovers = 0
-        away_fumbles = 0
-        away_interceptions = 0
-        home_defensive_touchdowns = 0
-        home_scoop_and_scores = 0
-        home_pick_sixes = 0
-        home_kickoff_defensive_touchdowns = 0
-        away_defensive_touchdowns = 0
-        away_scoop_and_scores = 0
-        away_pick_sixes = 0
-        away_kickoff_defensive_touchdowns = 0
-        home_kick_return_touchdowns = 0
-        away_kick_return_touchdowns = 0
+        # Calculate the game stats
+        stats = calculate_game_stats(plays, team_stats, game["playclock"])
 
+        # Put together the game data as a json
+        game['game_id'] = game_id
+        game_json = gather_game_data(game, team_info, game_state_info, waiting_on_and_gist, stats)
 
-       #{'Home score': '0', 'Away score': '0', 'Quarter': '1', 'Clock': '420', 'Ball Location': '35', 'Possession': 'away',
-        # 'Down': '1', 'Yards to go': '10', 'Defensive number': '666', 'Offensive number': '462',
-        # 'Defensive submitter': 'Baseballstatman', 'Offensive submitter': 'whywebuildthewall',
-        # 'Play': 'KICKOFF_NORMAL', 'Result': 'KICK', 'Actual result': 'KICK', 'Yards': '45',
-        # 'Play time': '5', 'Runoff time': '0', 'home_team': 'Auburn', 'away_team': 'Texas',
-        # 'game_id': '18c6en5', 'play_number': 1, 'win_probability': 0.0}
-        for play in plays:
-            home_score = play["Home score"]
-            away_score = play["Away score"]
-            quarter = play["Quarter"]
-            clock = play["Clock"]
-            ball_location = play["Ball Location"]
-            possession = play["Possession"]
-            down = play["Down"]
-            yards_to_go = play["Yards to go"]
-            defensive_number = play["Defensive number"]
-            offensive_number = play["Offensive number"]
-            defensive_submitter = play["Defensive submitter"]
-            offensive_submitter = play["Offensive submitter"]
-            play_type = play["Play"]
-            result = play["Result"]
-            actual_result = play["Actual result"]
-            yards = play["Yards"]
-            play_time = play["Play time"]
-            runoff_time = play["Runoff time"]
-            home_team = play["home_team"]
-            away_team = play["away_team"]
-            game_id = play["game_id"]
-            play_number = play["play_number"]
-            win_probability = play["win_probability"]
-
-            difference = abs(1500 - offensive_number + defensive_number) if offensive_number - defensive_number > 750 else abs(offensive_number - defensive_number)
-            if possession == "home":
-                home_total_diff_on_offense += difference
-                home_offensive_plays += 1
-                away_total_diff_on_defense += difference
-                away_defensive_plays += 1
-            else:
-                away_total_diff_on_offense += difference
-                away_offensive_plays += 1
-                home_total_diff_on_defense += difference
-                home_defensive_plays += 1
-
-            # Calculate field goal stats
-            if play_type == "FIELD_GOAL":
-                field_goal_distance = int(ball_location) - 17
-                if possession == "home":
-                    home_field_goal_attempts += 1
-                    if result == "FIELD_GOAL":
-                        home_field_goals_made += 1
-                        if field_goal_distance > home_longest_field_goal:
-                            home_longest_field_goal = field_goal_distance
-                    home_field_goal_percentage = home_field_goals_made/home_field_goal_attempts
-                else:
-                    away_field_goal_attempts += 1
-                    if result == "FIELD_GOAL":
-                        away_field_goals_made += 1
-                        if field_goal_distance > away_longest_field_goal:
-                            away_longest_field_goal = field_goal_distance
-                    away_field_goal_percentage = away_field_goals_made/away_field_goal_attempts
-
-            # Calculate passing stats
-            elif play_type == "PASS":
-                if possession == "home":
-                    home_passing_attempts += 1
-                    if result == "GAIN":
-                        home_passing_completions += 1
-                    if result == "TURNOVER":
-                        home_interceptions += 1
-                        home_turnovers += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        home_interceptions += 1
-                        home_turnovers += 1
-                        away_pick_sixes += 1
-                        away_defensive_touchdowns += 1
-                    home_passing_percentage = home_passing_completions/home_passing_attempts
-                else:
-                    away_passing_attempts += 1
-                    if result == "GAIN":
-                        away_passing_completions += 1
-                    if result == "TURNOVER":
-                        away_interceptions += 1
-                        away_turnovers += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        away_interceptions += 1
-                        away_turnovers += 1
-                        home_pick_sixes += 1
-                        home_defensive_touchdowns += 1
-                    away_passing_percentage = away_passing_completions/away_passing_attempts
-
-            # Calculate rushing stats
-            elif play_type == "RUN":
-                if possession == "home":
-                    home_rushing_attempts += 1
-                    if yards >= 3:
-                        home_rushing_success += 1
-                    if result == "TURNOVER":
-                        home_fumbles += 1
-                        home_turnovers += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        home_fumbles += 1
-                        home_turnovers += 1
-                        away_scoop_and_scores += 1
-                        away_defensive_touchdowns += 1
-                    home_rushing_percentage = home_rushing_success/home_rushing_attempts
-                else:
-                    away_rushing_attempts += 1
-                    if yards >= 3:
-                        away_rushing_success += 1
-                    if result == "TURNOVER":
-                        away_fumbles += 1
-                        away_turnovers += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        away_fumbles += 1
-                        away_turnovers += 1
-                        home_scoop_and_scores += 1
-                        home_defensive_touchdowns += 1
-                    away_rushing_percentage = away_rushing_success/away_rushing_attempts
-
-            # Calculate onside stats
-            elif play_type == "KICKOFF_ONSIDE":
-                if possession == "home":
-                    home_onside_kick_attempts += 1
-                    if result == "GAIN":
-                        home_onside_kick_success += 1
-                    if result == "TOUCHDOWN":
-                        home_onside_kick_success += 1
-                        home_kick_return_touchdowns += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        away_kickoff_defensive_touchdowns += 1
-                        away_defensive_touchdowns += 1
-                else:
-                    away_onside_kick_attempts += 1
-                    if result == "GAIN":
-                        away_onside_kick_success += 1
-                    if result == "TOUCHDOWN":
-                        away_onside_kick_success += 1
-                        away_kick_return_touchdowns += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        home_kickoff_defensive_touchdowns += 1
-                        home_defensive_touchdowns += 1
-
-            elif play_type == "KICKOFF_NORMAL" or play_type == "KICKOFF_SQUIB":
-                if possession == "home":
-                    if result == "TOUCHDOWN":
-                        away_kick_return_touchdowns += 1
-                    if result == "TURNOVER":
-                        home_fumbles += 1
-                        home_turnovers += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        home_fumbles += 1
-                        home_turnovers += 1
-                        away_kickoff_defensive_touchdowns += 1
-                        away_defensive_touchdowns += 1
-                else:
-                    if result == "TOUCHDOWN":
-                        home_kick_return_touchdowns += 1
-                    if result == "TURNOVER":
-                        away_fumbles += 1
-                        away_turnovers += 1
-                    if result == "TURNOVER_TOUCHDOWN":
-                        away_fumbles += 1
-                        away_turnovers += 1
-                        home_kickoff_defensive_touchdowns += 1
-                        home_defensive_touchdowns += 1
-
-            # Calculate two point stats
-            elif play_type == "TWO_POINT":
-                if possession == "home":
-                    home_two_point_attempts += 1
-                    if result == "TWO_POINT":
-                        home_two_point_success += 1
-                else:
-                    away_two_point_attempts += 1
-                    if result == "TWO_POINT":
-                        away_two_point_success += 1
-
-            if down == "3":
-                if possession == "home":
-                    home_third_down_attempts += 1
-                    if result == "GAIN" and yards_to_go <= yards:
-                        home_third_down_success += 1
-                    home_third_down_percentage = home_third_down_success/home_third_down_attempts
-                else:
-                    away_third_down_attempts += 1
-                    if result == "GAIN" and yards_to_go <= yards:
-                        away_third_down_success += 1
-                    away_third_down_percentage = away_third_down_success/away_third_down_attempts
-
-            if down == "4" and (play_type == "RUN" or play_type == "PASS"):
-                if possession == "home":
-                    home_fourth_down_attempts += 1
-                    if result == "GAIN" and yards_to_go <= yards:
-                        home_fourth_down_success += 1
-                    home_fourth_down_percentage = home_fourth_down_success/home_fourth_down_attempts
-                else:
-                    away_fourth_down_attempts += 1
-                    if result == "GAIN" and yards_to_go <= yards:
-                        away_fourth_down_success += 1
-                    away_fourth_down_percentage = away_fourth_down_success/away_fourth_down_attempts
-
-            if result == "GAIN":
-                if actual_result == "TOUCHDOWN":
-                    if possession == "home":
-                        if yards > home_longest_touchdown:
-                            home_longest_touchdown = yards
-                    else:
-                        if yards > away_longest_touchdown:
-                            away_longest_touchdown = yards
-
-        stats = {"num_plays": len(plays),
-                 "home_timeouts": team_stats["home_team_stats"]["timeouts"],
-                 "away_timeouts": team_stats["away_team_stats"]["timeouts"],
-                 "game_timer": game["Playclock"],
-                 "home_total_yards": team_stats["home_team_stats"]["total_yards"],
-                 "away_total_yards": team_stats["away_team_stats"]["total_yards"],
-                 "home_passing_yards": team_stats["home_team_stats"]["total_passing_yards"],
-                 "away_passing_yards": team_stats["away_team_stats"]["total_passing_yards"],
-                 "home_rushing_yards": team_stats["home_team_stats"]["total_rushing_yards"],
-                 "away_rushing_yards": team_stats["away_team_stats"]["total_rushing_yards"],
-                 "home_time_of_possession": team_stats["home_team_stats"]["time_of_possession"],
-                 "away_time_of_possession": team_stats["away_team_stats"]["time_of_possession"],
-                 "home_average_diff_on_offense": home_total_diff_on_offense / home_offensive_plays,
-                 "away_average_diff_on_offense": away_total_diff_on_offense / away_defensive_plays,
-                 "home_average_diff_on_defense": home_total_diff_on_defense / home_offensive_plays,
-                 "away_average_diff_on_defense": away_total_diff_on_defense / away_defensive_plays,
-                 "home_field_goal_attempts": home_field_goal_attempts,
-                 "home_field_goal_makes": home_field_goals_made,
-                 "home_field_goal_percentage": home_field_goal_percentage,
-                 "away_field_goal_attempts": away_field_goal_attempts,
-                 "away_field_goal_makes": away_field_goals_made,
-                 "away_field_goal_percentage": away_field_goal_percentage,
-                 "home_longest_field_goal": home_longest_field_goal,
-                 "away_longest_field_goal": away_longest_field_goal,
-                 "home_longest_touchdown": home_longest_touchdown,
-                 "away_longest_touchdown": away_longest_touchdown,
-                 "home_passing_attempts": home_passing_attempts,
-                 "home_passing_completions": home_passing_completions,
-                 "home_passing_percentage": home_passing_percentage,
-                 "away_passing_attempts": away_passing_attempts,
-                 "away_passing_completions": away_passing_completions,
-                 "away_passing_percentage": away_passing_percentage,
-                 "home_rushing_attempts": home_rushing_attempts,
-                 "home_rushing_success": home_rushing_success,
-                 "home_rushing_percentage": home_rushing_percentage,
-                 "away_rushing_attempts": away_rushing_attempts,
-                 "away_rushing_success": away_rushing_success,
-                 "away_rushing_percentage": away_rushing_percentage,
-                 "home_third_down_attempts": home_third_down_attempts,
-                 "home_third_down_success": home_third_down_success,
-                 "home_third_down_percentage": home_third_down_percentage,
-                 "away_third_down_attempts": away_third_down_attempts,
-                 "away_third_down_success": away_third_down_success,
-                 "away_third_down_percentage": away_third_down_percentage,
-                 "home_fourth_down_attempts": home_fourth_down_attempts,
-                 "home_fourth_down_success": home_fourth_down_success,
-                 "home_fourth_down_percentage": home_fourth_down_percentage,
-                 "away_fourth_down_attempts": away_fourth_down_attempts,
-                 "away_fourth_down_success": away_fourth_down_success,
-                 "away_fourth_down_percentage": away_fourth_down_percentage,
-                 "home_two_point_attempts": home_two_point_attempts,
-                 "home_two_point_success": home_two_point_success,
-                 "home_two_point_percentage": home_two_point_percentage,
-                 "away_two_point_attempts": away_two_point_attempts,
-                 "away_two_point_success": away_two_point_success,
-                 "away_two_point_percentage": away_two_point_percentage,
-                 "home_onside_kick_attempts": home_onside_kick_attempts,
-                 "home_onside_kick_success": home_onside_kick_success,
-                 "home_onside_kick_percentage": home_onside_kick_percentage,
-                 "away_onside_kick_attempts": away_onside_kick_attempts,
-                 "away_onside_kick_success": away_onside_kick_success,
-                 "away_onside_kick_percentage": away_onside_kick_percentage,
-                 "home_total_plays": home_total_plays,
-                 "home_offensive_plays": home_offensive_plays,
-                 "home_defensive_plays": home_defensive_plays,
-                 "away_total_plays": away_total_plays,
-                 "away_offensive_plays": away_offensive_plays,
-                 "away_defensive_plays": away_defensive_plays,
-                 "home_turnovers": home_turnovers,
-                 "home_fumbles": home_fumbles,
-                 "home_interceptions": home_interceptions,
-                 "away_turnovers": away_turnovers,
-                 "away_fumbles": away_fumbles,
-                 "away_interceptions": away_interceptions,
-                 "home_defensive_touchdowns": home_defensive_touchdowns,
-                 "home_scoop_and_scores": home_scoop_and_scores,
-                 "home_pick_sixes": home_pick_sixes,
-                 "home_kickoff_defensive_touchdowns": home_kickoff_defensive_touchdowns,
-                 "away_defensive_touchdowns": away_defensive_touchdowns,
-                 "away_scoop_and_scores": away_scoop_and_scores,
-                 "away_pick_sixes": away_pick_sixes,
-                 "away_kickoff_defensive_touchdowns": away_kickoff_defensive_touchdowns}
+        await save_game(game_json)
 
         # Save the plays in the database
         for play in plays:
             await save_play(play)
 
         # Save the game in the database
+        #if game_exists_in_deoxys(game_id):
+        #    update_game(game, playbook_and_coaches, team_stats, game_state_info, waiting_on_and_gist, stats)
+        #else:
+
     except Exception as e:
         raise Exception(f"{e}")
 
 
+def gather_game_data(game, team_info, game_state_info, waiting_on_and_gist, stats):
+    """
+    Put together the game data
+
+    :return:
+    """
+
+    # Drop the old home/away keys
+    game.pop('home', None)
+    game.pop('away', None)
+    game.update(team_info)
+
+    # Parse down and distance into separate fields
+    game.update(game_state_info)
+    game['down'] = game['down_and_distance'].split(' ')[0]
+    game['yards_to_go'] = game['down_and_distance'].split(' ')[1]
+    game.pop('down_and_distance', None)
+
+    game.update(waiting_on_and_gist)
+    game.update(stats)
+
+    return json.dumps(game)

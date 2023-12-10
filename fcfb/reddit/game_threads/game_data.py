@@ -28,9 +28,9 @@ def extract_game_state_info(text):
     return None
 
 
-def extract_playbook_and_coaches(text):
+def extract_team_info(text):
     """
-    Extract the playbook and coaches information from the text
+    Extract the team information from the text
 
     :param text:
     :return:
@@ -59,7 +59,21 @@ def extract_playbook_and_coaches(text):
         }
         teams.append(team)
 
-    return teams if teams else None
+    if teams is None:
+        return None
+
+    team_info = {
+        "home_team": teams[0]["team"],
+        "away_team": teams[1]["team"],
+        "home_coach": teams[0]["coach"],
+        "away_coach": teams[1]["coach"],
+        "home_offensive_playbook": teams[0]["offense"],
+        "away_offensive_playbook": teams[1]["offense"],
+        "home_defensive_playbook": teams[0]["defense"],
+        "away_defensive_playbook": teams[1]["defense"],
+    }
+
+    return team_info
 
 
 def extract_team_stats(text):
@@ -125,7 +139,7 @@ def extract_waiting_on_and_gist(text):
         # Extract only the username
         if " to this [comment]" in waiting_on_user:
             waiting_on_user = waiting_on_user.split(" to this [comment]")[0].strip()
-        else:
+        elif "Waiting on a response from" not in text:
             return None
 
         # Extract gist link
@@ -137,7 +151,7 @@ def extract_waiting_on_and_gist(text):
             return None
 
         return {
-            'waiting_on_user': waiting_on_user,
+            'waiting_on': waiting_on_user,
             'gist_link': gist_link
         }
 

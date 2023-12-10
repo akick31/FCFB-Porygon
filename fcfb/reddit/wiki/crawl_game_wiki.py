@@ -47,6 +47,11 @@ async def get_ongoing_games():
             data_dict.pop("Admin", None)
             data_dict.pop("Status", None)
 
+            # Set the score
+            data_dict["Home Score"] = data_dict["Score"].split("-")[1].strip()
+            data_dict["Away Score"] = data_dict["Score"].split("-")[0].strip()
+            data_dict.pop("Score", None)
+
             # Extract information from the markdown hyperlinks
             for key in ["Away", "Home"]:
                 match = text_outside_pattern.search(data_dict[key])
@@ -60,6 +65,13 @@ async def get_ongoing_games():
                 if key == "Thread":
                     data_dict[key] = match.group(2)
 
+            data_dict.pop("Deadline", None)
+
+            # Rename time to clock
+            data_dict["Clock"] = data_dict["Time"]
+            data_dict.pop("Time", None)
+
+            data_dict = {key.lower(): value for key, value in data_dict.items()}
             data_list.append(data_dict)
 
         return data_list
