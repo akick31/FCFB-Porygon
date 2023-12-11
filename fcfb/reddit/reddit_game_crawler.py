@@ -6,7 +6,7 @@ from fcfb.utils.exception_handling import async_exception_handler
 from fcfb.utils.setup import setup
 from fcfb.reddit.wiki.crawl_game_wiki import get_ongoing_games
 from fcfb.reddit.game_threads.game_data import extract_team_info, extract_game_state_info, extract_team_stats, \
-    extract_waiting_on_and_gist
+    extract_waiting_on_and_gist, extract_end_of_game_info
 from fcfb.gist.play_gist import extract_plays_from_gist
 from fcfb.api.deoxys.game_plays import save_play
 from fcfb.stats.game_stats import calculate_game_stats
@@ -29,8 +29,7 @@ async def ongoing_game_crawler(client):
         for game in game_list:
             await extract_game_info_and_save(client, game)
 
-        # TODO: Go through the list of games added that are not marked as finished, get the game id, verify that the game isn't over
-        # If the game is over, mark it as finished in the database and finish updating the gist
+        # TODO: Go through the list of games in the db that aren't finished and update them
 
         # TODO: When the game is over, update the team stats
     except Exception as e:
@@ -75,7 +74,7 @@ async def extract_game_info_and_save(client, game):
         game_state_info = extract_game_state_info(game_thread_text)
 
         # Extract if game is in OT or is done
-        # TODO THIS
+        # TODO EXTRACT IF GAME IS OVER/IN OT
         end_of_game_info = extract_end_of_game_info(game_thread_text)
 
         # Extract the waiting on and gist
@@ -110,6 +109,8 @@ async def extract_game_info_and_save(client, game):
         #if game_exists_in_deoxys(game_id):
         #    update_game(game, playbook_and_coaches, team_stats, game_state_info, waiting_on_and_gist, stats)
         #else:
+
+        # TODO: Generate plots and scorebugs
 
     except Exception as e:
         raise Exception(f"{e}")

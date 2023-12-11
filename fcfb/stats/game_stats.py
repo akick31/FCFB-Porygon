@@ -172,7 +172,11 @@ def calculate_game_stats(plays, team_stats, playclock):
         elif play_type == "RUN":
             if possession == "home":
                 home_rushing_attempts += 1
-                if yards >= 3:
+                if down == "1" and yards >= 5:
+                    home_rushing_successes += 1
+                elif down == "2" and yards/yards_to_go >= 0.7:
+                    home_rushing_successes += 1
+                elif (down == "3" or down == "4") and yards >= yards_to_go:
                     home_rushing_successes += 1
                 if result == "TURNOVER":
                     home_fumbles += 1
@@ -185,8 +189,12 @@ def calculate_game_stats(plays, team_stats, playclock):
                 home_rushing_percentage = home_rushing_successes/home_rushing_attempts
             else:
                 away_rushing_attempts += 1
-                if yards >= 3:
-                    away_rushing_successes += 1
+                if down == "1" and yards >= 5:
+                    home_rushing_successes += 1
+                elif down == "2" and yards/yards_to_go >= 0.7:
+                    home_rushing_successes += 1
+                elif (down == "3" or down == "4") and yards >= yards_to_go:
+                    home_rushing_successes += 1
                 if result == "TURNOVER":
                     away_fumbles += 1
                     away_turnovers += 1

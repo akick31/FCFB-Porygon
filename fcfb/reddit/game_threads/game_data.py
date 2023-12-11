@@ -156,3 +156,24 @@ def extract_waiting_on_and_gist(text):
         }
 
     return None
+
+
+def extract_end_of_game_info(text):
+    """
+    Extract if the game is in OT or finished
+
+    :return:
+    """
+
+    game_complete = False
+    game_in_ot = False
+
+    if "GAME COMPLETE" in text:
+        game_complete = True
+    if "Q5" in text:
+        game_in_ot = True
+
+    return {
+        'game_complete': game_complete,
+        'game_in_ot': game_in_ot
+    }
