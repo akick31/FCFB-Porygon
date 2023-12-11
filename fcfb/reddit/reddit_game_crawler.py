@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from fcfb.api.deoxys.games import save_game
+from fcfb.api.deoxys.games import save_game, get_game, update_game
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
 from fcfb.utils.exception_handling import async_exception_handler
 from fcfb.utils.setup import setup
@@ -28,6 +28,8 @@ async def ongoing_game_crawler(client):
         game_list = await get_ongoing_games()
         for game in game_list:
             await extract_game_info_and_save(client, game)
+
+        # TODO: Test coordinators
 
         # TODO: Go through the list of games in the db that aren't finished and update them
 
@@ -74,7 +76,6 @@ async def extract_game_info_and_save(client, game):
         game_state_info = extract_game_state_info(game_thread_text)
 
         # Extract if game is in OT or is done
-        # TODO EXTRACT IF GAME IS OVER/IN OT
         end_of_game_info = extract_end_of_game_info(game_thread_text)
 
         # Extract the waiting on and gist
@@ -99,16 +100,16 @@ async def extract_game_info_and_save(client, game):
         game['game_id'] = game_id
         game_json = gather_game_data(game, team_info, game_state_info, end_of_game_info, waiting_on_and_gist, stats)
 
-        await save_game(game_json)
+        # Save the game in the database
+        game_exists = await get_game(game_id)
+        if game_exists is not None:
+            await update_game(game_json)
+        else:
+            await save_game(game_json)
 
         # Save the plays in the database
         for play in plays:
             await save_play(play)
-
-        # Save the game in the database
-        #if game_exists_in_deoxys(game_id):
-        #    update_game(game, playbook_and_coaches, team_stats, game_state_info, waiting_on_and_gist, stats)
-        #else:
 
         # TODO: Generate plots and scorebugs
 

@@ -9,7 +9,7 @@ GAME_PLAYS_PATH = "games/"
 @async_exception_handler()
 async def save_game(game):
     """
-    Make API call to save the play in the database
+    Make API call to save the game in the database
     :param game
     :return:
     """
@@ -22,6 +22,56 @@ async def save_game(game):
 
         if response.status_code == 201:
             logger.info(f"Submitted new game {game['game_id']} between {game['home_team']} and {game['away_team']}")
+            return response.status_code
+        else:
+            raise DeoxysAPIError(f"HTTP {response.status_code} response {response.text}")
+
+    except Exception as e:
+        raise Exception(f"{e}")
+
+
+@async_exception_handler()
+async def get_game(game_id):
+    """
+    Make API call to get the game from the database
+    :param game_id
+    :return:
+    """
+
+    try:
+        payload = f"{game_id}"
+        endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload
+        response = requests.get(endpoint)
+
+        if response.status_code == 200:
+            logger.info(f"Get game {game_id}")
+            return response.json()
+        elif response.status_code == 404:
+            logger.info(f"Game {game_id} not found")
+            return None
+        else:
+            raise DeoxysAPIError(f"HTTP {response.status_code} response {response.text}")
+
+    except Exception as e:
+        raise Exception(f"{e}")
+
+
+@async_exception_handler()
+async def update_game(game):
+    """
+    Make API call to update the game in the database
+    :param game
+    :return:
+    """
+
+    try:
+        payload = f"update"
+        headers = {"Content-Type": "application/json"}
+        endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload
+        response = requests.put(endpoint, data=game, headers=headers)
+
+        if response.status_code == 200:
+            logger.info(f"Update game {game['game_id']} between {game['home_team']} and {game['away_team']}")
             return response.status_code
         else:
             raise DeoxysAPIError(f"HTTP {response.status_code} response {response.text}")
