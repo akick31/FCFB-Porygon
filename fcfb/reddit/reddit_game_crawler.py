@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from fcfb.api.deoxys.games import save_game
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
 from fcfb.utils.exception_handling import async_exception_handler
@@ -55,6 +56,12 @@ async def extract_game_info_and_save(client, game):
         game_thread = r.submission(url=game_thread_url)
         game_thread_text = game_thread.selftext
 
+        # Set the timestamp
+        timestamp = game_thread.created_utc
+        utc_datetime = datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc)
+        # Format the datetime object as a string in mm/dd/yyyy format
+        game["timestamp"] = utc_datetime.strftime("%m/%d/%Y")
+
         # Get the game ID
         game_id = game_thread.id
 
@@ -66,6 +73,10 @@ async def extract_game_info_and_save(client, game):
 
         # Extract the game state information
         game_state_info = extract_game_state_info(game_thread_text)
+
+        # Extract if game is in OT or is done
+        # TODO THIS
+        end_of_game_info = extract_end_of_game_info(game_thread_text)
 
         # Extract the waiting on and gist
         waiting_on_and_gist = extract_waiting_on_and_gist(game_thread_text)
@@ -83,10 +94,11 @@ async def extract_game_info_and_save(client, game):
 
         # Calculate the game stats
         stats = calculate_game_stats(plays, team_stats, game["playclock"])
+        game.pop("playclock", None) # No need to have two playcloks
 
         # Put together the game data as a json
         game['game_id'] = game_id
-        game_json = gather_game_data(game, team_info, game_state_info, waiting_on_and_gist, stats)
+        game_json = gather_game_data(game, team_info, game_state_info, end_of_game_info, waiting_on_and_gist, stats)
 
         await save_game(game_json)
 
@@ -103,7 +115,7 @@ async def extract_game_info_and_save(client, game):
         raise Exception(f"{e}")
 
 
-def gather_game_data(game, team_info, game_state_info, waiting_on_and_gist, stats):
+def gather_game_data(game, team_info, game_state_info, end_of_game_info, waiting_on_and_gist, stats):
     """
     Put together the game data
 
@@ -121,6 +133,7 @@ def gather_game_data(game, team_info, game_state_info, waiting_on_and_gist, stat
     game['yards_to_go'] = game['down_and_distance'].split(' ')[1]
     game.pop('down_and_distance', None)
 
+    game.update(end_of_game_info)
     game.update(waiting_on_and_gist)
     game.update(stats)
 
