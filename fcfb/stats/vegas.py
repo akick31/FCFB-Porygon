@@ -4,7 +4,7 @@ from fcfb.api.deoxys.elo import get_elo
 vegas_divisor = 18.14010981807
 
 
-def calculate_spread(team_info, season, week):
+async def calculate_spread(team_info, season, week):
     """
     Calculate the spread for a given game
 

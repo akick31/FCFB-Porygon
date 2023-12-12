@@ -1,4 +1,5 @@
 import requests
+from urllib.parse import quote
 from fcfb.utils.exception_handling import async_exception_handler, DeoxysAPIError
 from fcfb.utils.setup import setup
 
@@ -15,7 +16,8 @@ async def get_game_season(thread_timestamp):
     """
 
     try:
-        payload = f"season/{thread_timestamp}"
+        encoded_date_param = thread_timestamp.replace("/", "-")
+        payload = f"season/{encoded_date_param}"
         endpoint = config_data['api']['url'] + GAME_DATES_PATH + payload
         response = requests.get(endpoint)
 
@@ -39,7 +41,8 @@ async def get_game_week(thread_timestamp, season):
     """
 
     try:
-        payload = f"week/{thread_timestamp}/{season}"
+        encoded_date_param = thread_timestamp.replace("/", "-")
+        payload = f"week/{encoded_date_param}/{season}"
         endpoint = config_data['api']['url'] + GAME_DATES_PATH + payload
         response = requests.get(endpoint)
 

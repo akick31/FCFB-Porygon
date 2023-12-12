@@ -96,17 +96,24 @@ async def extract_game_info_and_save(client, game):
         gist_url = waiting_on_and_gist["gist_link"]
         plays = await extract_plays_from_gist(gist_url, home_team, away_team, game_id)
 
+        # Calcualate the win probability for each play
+        plays = calculate_win_probability(plays)
+
         # Calculate the game stats
         stats = calculate_game_stats(plays, team_stats, game["playclock"])
-        game.pop("playclock", None) # No need to have two playcloks
+        game.pop("playclock", None) # No need to have two playclocks
 
         # Calculate the spread
-        spread = calculate_spread(team_info, game_date_info["season"], game_date_info["week"])
+        spread = await calculate_spread(team_info, game_date_info["season"], game_date_info["week"])
 
         # Put together the game data as a json
         game['game_id'] = game_id
         game_json = gather_game_data(game, team_info, game_state_info, end_of_game_info, game_date_info,
                                      waiting_on_and_gist, stats, spread)
+
+        # Save the plays in the database
+        for play in plays:
+            await save_play(play)
 
         # Save the game in the database
         game_exists = await get_game(game_id)
@@ -114,10 +121,6 @@ async def extract_game_info_and_save(client, game):
             await update_game(game_json)
         else:
             await save_game(game_json)
-
-        # Save the plays in the database
-        for play in plays:
-            await save_play(play)
 
         # TODO: Generate plots and scorebugs
 

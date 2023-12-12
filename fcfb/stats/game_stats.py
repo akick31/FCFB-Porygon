@@ -81,8 +81,20 @@ def calculate_game_stats(plays, team_stats, playclock):
     away_kickoff_defensive_touchdowns = 0
     home_kick_return_touchdowns = 0
     away_kick_return_touchdowns = 0
+    game_length = 0
 
     for play in plays:
+        if play["Play time"] == "":
+            play_time = 0
+        else:
+            play_time = int(play["Play time"])
+
+        if play["Runoff time"] == "":
+            runoff_time = 0
+        else:
+            runoff_time = int(play["Runoff time"])
+
+        game_length += play_time + runoff_time
         if play["Ball Location"] == "":
             ball_location = 0
         else:
@@ -109,7 +121,9 @@ def calculate_game_stats(plays, team_stats, playclock):
         else:
             yards = int(play["Yards"])
 
-        difference = abs(1500 - offensive_number + defensive_number) if offensive_number - defensive_number > 750 else abs(offensive_number - defensive_number)
+        difference = abs(
+            1500 - offensive_number + defensive_number) if offensive_number - defensive_number > 750 else abs(
+            offensive_number - defensive_number)
         if possession == "home":
             home_total_diff_on_offense += difference
             home_offensive_plays += 1
@@ -130,14 +144,14 @@ def calculate_game_stats(plays, team_stats, playclock):
                     home_field_goals_made += 1
                     if field_goal_distance > home_longest_field_goal:
                         home_longest_field_goal = field_goal_distance
-                home_field_goal_percentage = home_field_goals_made/home_field_goal_attempts
+                home_field_goal_percentage = home_field_goals_made / home_field_goal_attempts
             else:
                 away_field_goal_attempts += 1
                 if result == "FIELD_GOAL":
                     away_field_goals_made += 1
                     if field_goal_distance > away_longest_field_goal:
                         away_longest_field_goal = field_goal_distance
-                away_field_goal_percentage = away_field_goals_made/away_field_goal_attempts
+                away_field_goal_percentage = away_field_goals_made / away_field_goal_attempts
 
         # Calculate passing stats
         elif play_type == "PASS":
@@ -153,7 +167,7 @@ def calculate_game_stats(plays, team_stats, playclock):
                     home_turnovers += 1
                     away_pick_sixes += 1
                     away_defensive_touchdowns += 1
-                home_passing_percentage = home_passing_completions/home_passing_attempts
+                home_passing_percentage = home_passing_completions / home_passing_attempts
             else:
                 away_passing_attempts += 1
                 if result == "GAIN":
@@ -166,7 +180,7 @@ def calculate_game_stats(plays, team_stats, playclock):
                     away_turnovers += 1
                     home_pick_sixes += 1
                     home_defensive_touchdowns += 1
-                away_passing_percentage = away_passing_completions/away_passing_attempts
+                away_passing_percentage = away_passing_completions / away_passing_attempts
 
         # Calculate rushing stats
         elif play_type == "RUN":
@@ -174,7 +188,7 @@ def calculate_game_stats(plays, team_stats, playclock):
                 home_rushing_attempts += 1
                 if down == "1" and yards >= 5:
                     home_rushing_successes += 1
-                elif down == "2" and yards/yards_to_go >= 0.7:
+                elif down == "2" and yards / yards_to_go >= 0.7:
                     home_rushing_successes += 1
                 elif (down == "3" or down == "4") and yards >= yards_to_go:
                     home_rushing_successes += 1
@@ -186,12 +200,12 @@ def calculate_game_stats(plays, team_stats, playclock):
                     home_turnovers += 1
                     away_scoop_and_scores += 1
                     away_defensive_touchdowns += 1
-                home_rushing_percentage = home_rushing_successes/home_rushing_attempts
+                home_rushing_percentage = home_rushing_successes / home_rushing_attempts
             else:
                 away_rushing_attempts += 1
                 if down == "1" and yards >= 5:
                     home_rushing_successes += 1
-                elif down == "2" and yards/yards_to_go >= 0.7:
+                elif down == "2" and yards / yards_to_go >= 0.7:
                     home_rushing_successes += 1
                 elif (down == "3" or down == "4") and yards >= yards_to_go:
                     home_rushing_successes += 1
@@ -203,7 +217,7 @@ def calculate_game_stats(plays, team_stats, playclock):
                     away_turnovers += 1
                     home_scoop_and_scores += 1
                     home_defensive_touchdowns += 1
-                away_rushing_percentage = away_rushing_successes/away_rushing_attempts
+                away_rushing_percentage = away_rushing_successes / away_rushing_attempts
 
         # Calculate onside stats
         elif play_type == "KICKOFF_ONSIDE":
@@ -268,24 +282,24 @@ def calculate_game_stats(plays, team_stats, playclock):
                 home_third_down_attempts += 1
                 if result == "GAIN" and yards_to_go <= yards:
                     home_third_down_successes += 1
-                home_third_down_percentage = home_third_down_successes/home_third_down_attempts
+                home_third_down_percentage = home_third_down_successes / home_third_down_attempts
             else:
                 away_third_down_attempts += 1
                 if result == "GAIN" and yards_to_go <= yards:
                     away_third_down_successes += 1
-                away_third_down_percentage = away_third_down_successes/away_third_down_attempts
+                away_third_down_percentage = away_third_down_successes / away_third_down_attempts
 
         if down == "4" and (play_type == "RUN" or play_type == "PASS"):
             if possession == "home":
                 home_fourth_down_attempts += 1
                 if result == "GAIN" and yards_to_go <= yards:
                     home_fourth_down_successes += 1
-                home_fourth_down_percentage = home_fourth_down_successes/home_fourth_down_attempts
+                home_fourth_down_percentage = home_fourth_down_successes / home_fourth_down_attempts
             else:
                 away_fourth_down_attempts += 1
                 if result == "GAIN" and yards_to_go <= yards:
                     away_fourth_down_successes += 1
-                away_fourth_down_percentage = away_fourth_down_successes/away_fourth_down_attempts
+                away_fourth_down_percentage = away_fourth_down_successes / away_fourth_down_attempts
 
         if result == "GAIN":
             if actual_result == "TOUCHDOWN":
@@ -376,6 +390,7 @@ def calculate_game_stats(plays, team_stats, playclock):
              "away_scoop_and_scores": away_scoop_and_scores,
              "away_pick_sixes": away_pick_sixes,
              "away_kickoff_defensive_touchdowns": away_kickoff_defensive_touchdowns,
-             "win_probability": plays[-1]["win_probability"]}
-
+             "win_probability": plays[-1]["win_probability"],
+             "game_length": game_length
+             }
     return stats

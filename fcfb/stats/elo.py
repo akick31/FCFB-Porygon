@@ -1,5 +1,5 @@
 import math
-from fcfb.api.deoxys.elo import get_elo
+from fcfb.api.deoxys.elo import get_elo, save_elo
 
 # Vegas line divisor - (Elo - Opp Elo / x)
 vegas_divisor = 18.14010981807
@@ -94,20 +94,19 @@ def calc_game_elo(game_json):
     """
 
     # Cap at 28 for overtime games
-    #TODO get game length
-    mins = min(game.get_game_length() / 60, 28)
+    mins = min(int(game_json['game_length']) / 60, 28)
 
     home_team = game_json['home_team']
     away_team = game_json['away_team']
 
-    game_week = game_json['week']
-    game_season = game_json['season']
+    game_week = int(game_json['week'])
+    game_season = int(game_json['season'])
 
-    home_score = game_json['home_score']
-    away_score = game_json['away_score']
+    home_score = int(game_json['home_score'])
+    away_score = int(game_json['away_score'])
 
-    home_elo = await get_elo(home_team, game_week.week_no - 1, game_season)
-    away_elo = await get_elo(away_team, game_week.week_no - 1, game_season)
+    home_elo = await get_elo(home_team, game_week - 1, game_season)
+    away_elo = await get_elo(away_team, game_week - 1, game_season)
 
     winner_elo_diff = 0
 
@@ -128,10 +127,11 @@ def calc_game_elo(game_json):
     new_home_elo = home_elo + home_elo_change
     new_away_elo = away_elo + away_elo_change
 
-    #TODO save elo
+    await save_elo(home_team, game_week, game_season, new_home_elo)
+    await save_elo(away_team, game_week, game_season, new_away_elo)
 
     return {
-        'game': game,
+        'game': game_json["game_id"],
         'home_team': home_team,
         'away_team': away_team,
         'home_elo': {
