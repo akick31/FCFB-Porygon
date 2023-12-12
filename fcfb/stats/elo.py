@@ -48,6 +48,7 @@ def cdf_normal(x, mean, stdev):
 
     return (1 - math.erf((mean - x) / (math.sqrt(2) * stdev))) / 2
 
+
 def calc_mov_multiplier(score_diff, winner_elo_diff):
     """
     Calculate the MOV multiplier
@@ -59,8 +60,10 @@ def calc_mov_multiplier(score_diff, winner_elo_diff):
 
     return math.log(abs(score_diff) + 1) * (2.2 / ((winner_elo_diff * 0.001) + 2.2))
 
+
 # Don't calculate this every time
 exp_normalizer = (1 - math.exp(0 - (28 / 2))) * 2
+
 
 def calc_elo_change(mins_played, team_win_prob, mov_multiplier, expected_team_win_prob):
     """
@@ -82,33 +85,29 @@ def calc_elo_change(mins_played, team_win_prob, mov_multiplier, expected_team_wi
     return exp_deweight * mov_multiplier * k_val * diff_from_expected
 
 
-def calc_game_elo(game_id):
+def calc_game_elo(game_json):
     """
     Calculate the Elo for a given game
 
-    :param game_id:
+    :param game_json:
     :return:
     """
 
-    game = Game.objects.get(id=game_id)
-
-    if not game or game.live:
-        return False
-
     # Cap at 28 for overtime games
+    #TODO get game length
     mins = min(game.get_game_length() / 60, 28)
 
-    home_team = Team.objects.get(id=game.home_team.team)
-    away_team = Team.objects.get(id=game.away_team.team)
+    home_team = game_json['home_team']
+    away_team = game_json['away_team']
 
-    game_week = Week.objects.get(games=game.id)
-    game_season = Season.objects.get(id=game_week.season)
+    game_week = game_json['week']
+    game_season = game_json['season']
 
-    home_score = game.home_team.stats.score.final
-    away_score = game.away_team.stats.score.final
+    home_score = game_json['home_score']
+    away_score = game_json['away_score']
 
-    home_elo = get_elo(home_team, game_week.week_no - 1, game_season)
-    away_elo = get_elo(away_team, game_week.week_no - 1, game_season)
+    home_elo = await get_elo(home_team, game_week.week_no - 1, game_season)
+    away_elo = await get_elo(away_team, game_week.week_no - 1, game_season)
 
     winner_elo_diff = 0
 
@@ -128,6 +127,8 @@ def calc_game_elo(game_id):
 
     new_home_elo = home_elo + home_elo_change
     new_away_elo = away_elo + away_elo_change
+
+    #TODO save elo
 
     return {
         'game': game,
