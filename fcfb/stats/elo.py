@@ -1,5 +1,5 @@
 import math
-from models.team_metrics import TeamMetrics  # Assuming you have the necessary imports for models
+from fcfb.api.deoxys.elo import get_elo
 
 # Vegas line divisor - (Elo - Opp Elo / x)
 vegas_divisor = 18.14010981807
@@ -10,40 +10,31 @@ mov_stdev = 15.61
 # K value
 k_val = 20
 
-def get_elo(team, week_no, season):
-    """
-    Get the Elo for a team in a given week
 
-    :param team:
-    :param week_no:
-    :param season:
+# P-F-R method - see https://www.pro-football-reference.com/about/win_prob.htm
+def calc_win_prob(team_score, opp_score, team_elo, opp_elo, mins_played):
+    """
+    Calculate the win probability for a given game state
+
+    :param team_score:
+    :param opp_score:
+    :param team_elo:
+    :param opp_elo:
+    :param mins_played:
     :return:
     """
 
-    if not season:
-        return 1500
+    opp_margin = opp_score - team_score
+    inverse_vegas_line = (team_elo - opp_elo) / vegas_divisor
+    mins_remaining = (28 - mins_played)
 
-    team_metrics = TeamMetrics.objects.get(team=team.id)
-    found_season = False
+    win_dist = cdf_normal((opp_margin + 0.5), (inverse_vegas_line * (mins_remaining / 28)), (mov_stdev / math.sqrt(28 / mins_remaining)))
+    loss_dist = cdf_normal((opp_margin - 0.5), (inverse_vegas_line * (mins_remaining / 28)), (mov_stdev / math.sqrt(28 / mins_remaining)))
 
-    for metrics_season in team_metrics.seasons:
-        if metrics_season.season == season.id:
-            found_season = True
+    win_prob = (1 - win_dist) + (0.5 * (win_dist - loss_dist))
 
-            for metrics_week in reversed(metrics_season.weeks):
-                if 'week' not in metrics_week:
-                    return metrics_week['elo']['elo']
+    return win_prob
 
-                if week_no is not None:
-                    metrics_week_doc = Week.objects.get(id=metrics_week['week'])
-
-                    if metrics_week_doc.week_no <= week_no:
-                        return metrics_week['elo']['elo']
-
-    if not found_season:
-        return 1500
-
-    raise ValueError(f"Could not find S{season.season_no if season else '--'} W{week_no or '--'} metrics for {team.name}")
 
 def cdf_normal(x, mean, stdev):
     """

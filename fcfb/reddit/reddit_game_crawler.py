@@ -2,11 +2,12 @@ import json
 from datetime import datetime, timezone
 from fcfb.api.deoxys.games import save_game, get_game, update_game
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
+from fcfb.stats.vegas import calculate_spread
 from fcfb.utils.exception_handling import async_exception_handler
 from fcfb.utils.setup import setup
 from fcfb.reddit.wiki.crawl_game_wiki import get_ongoing_games
 from fcfb.reddit.game_threads.game_data import extract_team_info, extract_game_state_info, extract_team_stats, \
-    extract_waiting_on_and_gist, extract_end_of_game_info
+    extract_waiting_on_and_gist, extract_end_of_game_info, extract_game_date_info
 from fcfb.gist.play_gist import extract_plays_from_gist
 from fcfb.api.deoxys.game_plays import save_play
 from fcfb.stats.game_stats import calculate_game_stats
@@ -33,7 +34,7 @@ async def ongoing_game_crawler(client):
 
         # TODO: Go through the list of games in the db that aren't finished and update them
 
-        # TODO: When the game is over, update the team stats
+        # TODO: When the game is over, update the team stats and calculate the elo adjustment
     except Exception as e:
         raise Exception(f"{e}")
 
@@ -78,6 +79,9 @@ async def extract_game_info_and_save(client, game):
         # Extract if game is in OT or is done
         end_of_game_info = extract_end_of_game_info(game_thread_text)
 
+        # Extract the season and week
+        game_date_info = await extract_game_date_info(game["timestamp"])
+
         # Extract the waiting on and gist
         waiting_on_and_gist = extract_waiting_on_and_gist(game_thread_text)
 
@@ -96,9 +100,13 @@ async def extract_game_info_and_save(client, game):
         stats = calculate_game_stats(plays, team_stats, game["playclock"])
         game.pop("playclock", None) # No need to have two playcloks
 
+        # Calculate the spread
+        spread = calculate_spread(team_info, game_date_info["season"], game_date_info["week"])
+
         # Put together the game data as a json
         game['game_id'] = game_id
-        game_json = gather_game_data(game, team_info, game_state_info, end_of_game_info, waiting_on_and_gist, stats)
+        game_json = gather_game_data(game, team_info, game_state_info, end_of_game_info, game_date_info,
+                                     waiting_on_and_gist, stats, spread)
 
         # Save the game in the database
         game_exists = await get_game(game_id)
@@ -117,9 +125,19 @@ async def extract_game_info_and_save(client, game):
         raise Exception(f"{e}")
 
 
-def gather_game_data(game, team_info, game_state_info, end_of_game_info, waiting_on_and_gist, stats):
+def gather_game_data(game, team_info, game_state_info, end_of_game_info, game_date_info, waiting_on_and_gist, stats,
+                     spread):
     """
     Put together the game data
+
+    :param game:
+    :param team_info:
+    :param game_state_info:
+    :param end_of_game_info:
+    :param game_date_info:
+    :param waiting_on_and_gist:
+    :param stats:
+    :param spread:
 
     :return:
     """
@@ -136,7 +154,9 @@ def gather_game_data(game, team_info, game_state_info, end_of_game_info, waiting
     game.pop('down_and_distance', None)
 
     game.update(end_of_game_info)
+    game.update(game_date_info)
     game.update(waiting_on_and_gist)
     game.update(stats)
+    game.update(spread)
 
     return json.dumps(game)

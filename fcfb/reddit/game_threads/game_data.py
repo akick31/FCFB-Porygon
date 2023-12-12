@@ -1,5 +1,7 @@
 import re
 
+from fcfb.api.deoxys.game_dates import get_game_season, get_game_week
+
 
 def extract_game_state_info(text):
     pattern = re.compile(r'Clock\|Quarter\|Down\|Ball Location\|Possession\|Playclock\|Deadline\n:-:\|:-:\|:-:\|:-:\|:-:\|:-:\|:-:\n(.+?)\n')
@@ -176,4 +178,21 @@ def extract_end_of_game_info(text):
     return {
         'game_complete': game_complete,
         'game_in_ot': game_in_ot
+    }
+
+
+async def extract_game_date_info(thread_timestamp):
+    """
+    Extract the game date information from the text
+
+    :param thread_timestamp:
+    :return:
+    """
+
+    season = await get_game_season(thread_timestamp)
+    week = await get_game_week(thread_timestamp, season)
+
+    return {
+        'season': season,
+        'week': week
     }
