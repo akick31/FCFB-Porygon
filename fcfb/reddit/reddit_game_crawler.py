@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fcfb.api.deoxys.games import save_game, get_game, update_game
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
 from fcfb.stats.vegas import calculate_spread
+from fcfb.stats.win_probability import calculate_win_probability
 from fcfb.utils.exception_handling import async_exception_handler
 from fcfb.utils.setup import setup
 from fcfb.reddit.wiki.crawl_game_wiki import get_ongoing_games
@@ -97,7 +98,7 @@ async def extract_game_info_and_save(client, game):
         plays = await extract_plays_from_gist(gist_url, home_team, away_team, game_id)
 
         # Calcualate the win probability for each play
-        plays = calculate_win_probability(plays)
+        plays = await calculate_win_probability(team_info, plays, game_date_info)
 
         # Calculate the game stats
         stats = calculate_game_stats(plays, team_stats, game["playclock"])

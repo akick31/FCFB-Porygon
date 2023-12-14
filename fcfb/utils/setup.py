@@ -58,6 +58,9 @@ def logging_setup():
     :return:
     """
 
+    # Suppress discord gateway warnings
+    logging.getLogger("discord.gateway").setLevel(logging.ERROR)
+
     # Create logger
     logger = logging.getLogger('fcfb_porygon')
     logger.setLevel(logging.DEBUG)
