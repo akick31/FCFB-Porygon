@@ -137,7 +137,7 @@ def calculate_game_stats(plays, team_stats, playclock):
 
         # Calculate field goal stats
         if play_type == "FIELD_GOAL":
-            field_goal_distance = int(ball_location) - 17
+            field_goal_distance = 100-int(ball_location) + 17
             if possession == "home":
                 home_field_goal_attempts += 1
                 if result == "FIELD_GOAL":

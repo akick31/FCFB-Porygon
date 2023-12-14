@@ -15,6 +15,16 @@ async def save_play(play_data):
     """
 
     try:
+        if play_data['Yards'] == '':
+            play_data['Yards'] = 0
+        if play_data['Play time'] == '':
+            play_data['Play time'] = 0
+        if play_data['Runoff time'] == '':
+            play_data['Runoff time'] = 0
+        if play_data['Offensive number'] == '':
+            play_data['Offensive number'] = 0
+        if play_data['Defensive number'] == '':
+            play_data['Defensive number'] = 0
         formatted_data = {key.lower().replace(' ', '_'): value for key, value in play_data.items()}
         payload = f"add/{'/'.join(f'{key}/{value}' for key, value in formatted_data.items())}"
         endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload

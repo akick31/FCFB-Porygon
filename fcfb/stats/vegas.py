@@ -16,8 +16,9 @@ async def calculate_spread(team_info, season, week):
 
     home_team = team_info['home_team']
     away_team = team_info['away_team']
+    week = int(week)
 
-    home_elo = await get_elo(home_team, week-1, season)
-    away_elo = await get_elo(away_team, week-1, season)
+    home_elo = float(await get_elo(home_team, week-1, season))
+    away_elo = float(await get_elo(away_team, week-1, season))
 
     return {"spread": (home_elo - away_elo) / vegas_divisor}

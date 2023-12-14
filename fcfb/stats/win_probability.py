@@ -34,13 +34,13 @@ async def calculate_win_probability(team_info, plays, game_date_info):
     """
 
     try:
-        week = game_date_info['week']
+        week = int(game_date_info['week'])
         season = game_date_info['season']
         home_team = team_info['home_team']
         away_team = team_info['away_team']
 
-        home_elo = await get_elo(home_team, week, season)
-        away_elo = await get_elo(away_team, week, season)
+        home_elo = await get_elo(home_team, week-1, season)
+        away_elo = await get_elo(away_team, week-1, season)
 
         had_first_possession = 0 if plays[1]['Possession'] == "home" else 1
 
@@ -49,12 +49,14 @@ async def calculate_win_probability(team_info, plays, game_date_info):
             quarter = int(play['Quarter'])
             clock = int(play['Clock'])
             play_number = int(play['play_number'])
+            home_score = int(play['Home score'])
+            away_score = int(play['Away score'])
             if play['Possession'] == home_team:
-                margin = int(play['Home score']) - int(play['Away score'])
+                margin = home_score - away_score
                 offense_elo = home_elo
                 defense_elo = away_elo
             else:
-                margin = int(play['Away score']) - int(play['Home score'])
+                margin = away_score - home_score
                 offense_elo = away_elo
                 defense_elo = home_elo
 
@@ -86,7 +88,7 @@ async def calculate_win_probability(team_info, plays, game_date_info):
             current_win_probability = get_win_probability_for_play(down, distance, position, margin, seconds_left_game,
                                                                    seconds_left_half, half, had_first_possession,
                                                                    elo_diff_time, play_type)
-            plays[play_number]['win_probability'] = current_win_probability
+            plays[play_number-1]['win_probability'] = current_win_probability
 
         return plays
     except Exception as e:

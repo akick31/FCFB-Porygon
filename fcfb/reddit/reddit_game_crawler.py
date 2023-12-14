@@ -119,9 +119,9 @@ async def extract_game_info_and_save(client, game):
         # Save the game in the database
         game_exists = await get_game(game_id)
         if game_exists is not None:
-            await update_game(game_json)
+            await update_game(game_id, game_json)
         else:
-            await save_game(game_json)
+            await save_game(game_id, game_json)
 
         # TODO: Generate plots and scorebugs
 
@@ -153,8 +153,16 @@ def gather_game_data(game, team_info, game_state_info, end_of_game_info, game_da
 
     # Parse down and distance into separate fields
     game.update(game_state_info)
-    game['down'] = game['down_and_distance'].split(' ')[0]
-    game['yards_to_go'] = game['down_and_distance'].split(' ')[1]
+    game['down'] = game['down_and_distance'].split('&')[0].strip()
+    if game['down'] == '4th':
+        game['down'] = 4
+    elif game['down'] == '3rd':
+        game['down'] = 3
+    elif game['down'] == '2nd':
+        game['down'] = 2
+    elif game['down'] == '1st':
+        game['down'] = 1
+    game['yards_to_go'] = int(game['down_and_distance'].split('&')[1].strip())
     game.pop('down_and_distance', None)
 
     game.update(end_of_game_info)
@@ -162,5 +170,12 @@ def gather_game_data(game, team_info, game_state_info, end_of_game_info, game_da
     game.update(waiting_on_and_gist)
     game.update(stats)
     game.update(spread)
+
+    game["home_score"] = game["home score"]
+    game["away_score"] = game["away score"]
+    game["thread_timestamp"] = game["timestamp"]
+    game.pop("timestamp", None)
+    game.pop("home score", None)
+    game.pop("away score", None)
 
     return json.dumps(game)

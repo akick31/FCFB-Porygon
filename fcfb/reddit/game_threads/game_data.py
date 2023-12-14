@@ -75,6 +75,11 @@ def extract_team_info(text):
         "away_defensive_playbook": teams[1]["defense"],
     }
 
+    if "–" in team_info["home_team"]:
+        team_info["home_team"].replace("–", "-")
+    if "–" in team_info["away_team"]:
+        team_info["away_team"].replace("–", "-")
+
     return team_info
 
 
@@ -105,16 +110,16 @@ def extract_team_stats(text):
     if away_team_stats_line is not None and home_team_stats_line is not None:
         return {
             'away_team_stats': {
-                'total_passing_yards': stats_parts_away_team[0].strip(),
-                'total_rushing_yards': stats_parts_away_team[1].strip(),
-                'total_yards': stats_parts_away_team[2].strip(),
+                'total_passing_yards': stats_parts_away_team[0].split("yards")[0].strip(),
+                'total_rushing_yards': stats_parts_away_team[1].split("yards")[0].strip(),
+                'total_yards': stats_parts_away_team[2].split("yards")[0].strip(),
                 'time_of_possession': stats_parts_away_team[6].strip(),
                 'timeouts': stats_parts_away_team[7].strip()
             },
             'home_team_stats': {
-                'total_passing_yards': stats_parts_home_team[0].strip(),
-                'total_rushing_yards': stats_parts_home_team[1].strip(),
-                'total_yards': stats_parts_home_team[2].strip(),
+                'total_passing_yards': stats_parts_home_team[0].split("yards")[0].strip(),
+                'total_rushing_yards': stats_parts_home_team[1].split("yards")[0].strip(),
+                'total_yards': stats_parts_home_team[2].split("yards")[0].strip(),
                 'time_of_possession': stats_parts_home_team[6].strip(),
                 'timeouts': stats_parts_home_team[7].strip()
             }
@@ -176,8 +181,8 @@ def extract_end_of_game_info(text):
         game_in_ot = True
 
     return {
-        'game_complete': game_complete,
-        'game_in_ot': game_in_ot
+        'is_final': game_complete,
+        'is_ot': game_in_ot
     }
 
 

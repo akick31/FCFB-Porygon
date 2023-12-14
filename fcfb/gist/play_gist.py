@@ -17,7 +17,6 @@ async def extract_plays_from_gist(gist_url, home_team, away_team, game_id):
     :return:
     """
 
-
     try:
         # Get the Gist ID
         gist_id = gist_url.split("/")[-1]
