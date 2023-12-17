@@ -85,7 +85,7 @@ def calc_elo_change(mins_played, team_win_prob, mov_multiplier, expected_team_wi
     return exp_deweight * mov_multiplier * k_val * diff_from_expected
 
 
-def calc_game_elo(game_json):
+async def calc_game_elo(game_json):
     """
     Calculate the Elo for a given game
 

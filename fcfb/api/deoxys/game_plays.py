@@ -25,6 +25,12 @@ async def save_play(play_data):
             play_data['Offensive number'] = 0
         if play_data['Defensive number'] == '':
             play_data['Defensive number'] = 0
+        if play_data['Defensive submitter'] == '':
+            play_data['Defensive submitter'] = "None"
+        if play_data['Offensive submitter'] == '':
+            play_data['Offensive submitter'] = "None"
+        if play_data['Play'] == '':
+            play_data['Play'] = "None"
         formatted_data = {key.lower().replace(' ', '_'): value for key, value in play_data.items()}
         payload = f"add/{'/'.join(f'{key}/{value}' for key, value in formatted_data.items())}"
         endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload

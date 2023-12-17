@@ -22,7 +22,8 @@ async def extract_plays_from_gist(gist_url, home_team, away_team, game_id):
         gist_id = gist_url.split("/")[-1]
 
         # Get the Gist content
-        response = requests.get(f"https://api.github.com/gists/{gist_id}")
+        headers = {"Authorization": f"Bearer {config_data['github']['token']}"}
+        response = requests.get(f"https://api.github.com/gists/{gist_id}", headers=headers)
         gist_data = response.json()
 
         file_name = list(gist_data["files"].keys())[-1]

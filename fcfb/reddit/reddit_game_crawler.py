@@ -1,7 +1,10 @@
 import json
 from datetime import datetime, timezone
-from fcfb.api.deoxys.games import save_game, get_game, update_game
+from fcfb.api.deoxys.games import save_game, get_game, update_game, get_unfinished_games
+from fcfb.api.deoxys.teams import update_team_stats
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
+from fcfb.stats.elo import calc_game_elo
+from fcfb.stats.team_stats import calculate_team_stats
 from fcfb.stats.vegas import calculate_spread
 from fcfb.stats.win_probability import calculate_win_probability
 from fcfb.utils.exception_handling import async_exception_handler
@@ -31,11 +34,23 @@ async def ongoing_game_crawler(client):
         for game in game_list:
             await extract_game_info_and_save(client, game)
 
+        # Iterate through the list of games in the db that aren't finished and update them
+        game_list = await get_unfinished_games()
+        for game in game_list:
+            game = {
+                "away": game["awayTeam"],
+                "home": game["homeTeam"],
+                "quarter": game["quarter"],
+                "playclock": game["gameTimer"],
+                "thread": game["thread"],
+                "home score": game["homeScore"],
+                "away score": game["awayScore"],
+                "clock": game["clock"],
+                "timestamp": game["threadTimestamp"]
+            }
+            await extract_game_info_and_save(client, game)
+
         # TODO: Test coordinators
-
-        # TODO: Go through the list of games in the db that aren't finished and update them
-
-        # TODO: When the game is over, update the team stats and calculate the elo adjustment
     except Exception as e:
         raise Exception(f"{e}")
 
@@ -50,6 +65,12 @@ async def extract_game_info_and_save(client, game):
     """
 
     try:
+        # Fix team names
+        if '&amp;' in game['home']:
+            game['home'] = game['home'].replace('&amp;', '&')
+        if '&amp;' in game['away']:
+            game['away'] = game['away'].replace('&amp;', '&')
+
         game_thread_url = game["thread"]
         home_team = game["home"]
         away_team = game["away"]
@@ -97,6 +118,13 @@ async def extract_game_info_and_save(client, game):
         gist_url = waiting_on_and_gist["gist_link"]
         plays = await extract_plays_from_gist(gist_url, home_team, away_team, game_id)
 
+        # Check if the game is up to date, if so, just skip it to avoid extra API calls
+        game_from_db = await get_game(game_id)
+        if game_from_db is not None and int(game_from_db["numPlays"]) == len(plays):
+            message = f"Game {game_id} is up to date, skipping"
+            logger.info(message)
+            return
+
         # Calcualate the win probability for each play
         plays = await calculate_win_probability(team_info, plays, game_date_info)
 
@@ -109,7 +137,7 @@ async def extract_game_info_and_save(client, game):
 
         # Put together the game data as a json
         game['game_id'] = game_id
-        game_json = gather_game_data(game, team_info, game_state_info, end_of_game_info, game_date_info,
+        game_json, game_str = gather_game_data(game, team_info, game_state_info, end_of_game_info, game_date_info,
                                      waiting_on_and_gist, stats, spread)
 
         # Save the plays in the database
@@ -119,9 +147,12 @@ async def extract_game_info_and_save(client, game):
         # Save the game in the database
         game_exists = await get_game(game_id)
         if game_exists is not None:
-            await update_game(game_id, game_json)
+            await update_game(game_id, game_str)
         else:
-            await save_game(game_id, game_json)
+            await save_game(game_id, game_str)
+
+        if game_json["is_final"]:
+            await finalize_game(game_json)
 
         # TODO: Generate plots and scorebugs
 
@@ -171,6 +202,9 @@ def gather_game_data(game, team_info, game_state_info, end_of_game_info, game_da
     game.update(stats)
     game.update(spread)
 
+    if game["is_final"]:
+        game["clock"] = "0:00"
+
     game["home_score"] = game["home score"]
     game["away_score"] = game["away score"]
     game["thread_timestamp"] = game["timestamp"]
@@ -178,4 +212,18 @@ def gather_game_data(game, team_info, game_state_info, end_of_game_info, game_da
     game.pop("home score", None)
     game.pop("away score", None)
 
-    return json.dumps(game)
+    return game, json.dumps(game)
+
+
+async def finalize_game(game_json):
+    """
+    Finalize the game
+
+    :param game_json:
+    :return:
+    """
+
+    await calc_game_elo(game_json)
+    home_team_stats, away_team_stats = await calculate_team_stats(game_json)
+    await update_team_stats(game_json["home_team"], home_team_stats)
+    await update_team_stats(game_json["away_team"], away_team_stats)

@@ -26,15 +26,19 @@ def calculate_game_stats(plays, team_stats, playclock):
     home_passing_attempts = 0
     home_passing_completions = 0
     home_passing_percentage = 0
+    home_passing_touchdowns = 0
     away_passing_attempts = 0
     away_passing_completions = 0
     away_passing_percentage = 0
+    away_passing_touchdowns = 0
     home_rushing_attempts = 0
     home_rushing_successes = 0
     home_rushing_percentage = 0
+    home_rushing_touchdowns = 0
     away_rushing_attempts = 0
     away_rushing_successes = 0
     away_rushing_percentage = 0
+    away_rushing_touchdowns = 0
     home_third_down_attempts = 0
     home_third_down_successes = 0
     home_third_down_percentage = 0
@@ -82,6 +86,46 @@ def calculate_game_stats(plays, team_stats, playclock):
     home_kick_return_touchdowns = 0
     away_kick_return_touchdowns = 0
     game_length = 0
+    home_safeties_forced = 0
+    away_safeties_forced = 0
+    home_blocked_field_goals = 0
+    away_blocked_field_goals = 0
+    home_kick_sixes = 0
+    away_kick_sixes = 0
+    home_pat_attempts = 0
+    home_pat_successes = 0
+    home_pat_percentage = 0
+    home_pat_two_point_return = 0
+    away_pat_attempts = 0
+    away_pat_successes = 0
+    away_pat_percentage = 0
+    away_pat_two_point_return = 0
+    home_total_punts = 0
+    away_total_punts = 0
+    home_longest_punt = 0
+    away_longest_punt = 0
+    home_total_punt_yards = 0
+    away_total_punt_yards = 0
+    home_average_punt = 0
+    away_average_punt = 0
+    home_punt_touchbacks = 0
+    away_punt_touchbacks = 0
+    home_blocked_punts = 0
+    away_blocked_punts = 0
+    home_punt_return_touchdowns = 0
+    away_punt_return_touchdowns = 0
+    home_muffed_punts_recovered = 0
+    away_muffed_punts_recovered = 0
+    home_kickoff_average_spot = 0
+    home_kickoffs = 0
+    away_kickoff_average_spot = 0
+    away_kickoffs = 0
+    home_total_kickoff_yards = 0
+    away_total_kickoff_yards = 0
+    home_kickoff_touchbacks = 0
+    away_kickoff_touchbacks = 0
+    home_kickoff_muff_recoveries = 0
+    away_kickoff_muff_recoveries = 0
 
     for play in plays:
         if play["Play time"] == "":
@@ -135,26 +179,8 @@ def calculate_game_stats(plays, team_stats, playclock):
             home_total_diff_on_defense += difference
             home_defensive_plays += 1
 
-        # Calculate field goal stats
-        if play_type == "FIELD_GOAL":
-            field_goal_distance = 100-int(ball_location) + 17
-            if possession == "home":
-                home_field_goal_attempts += 1
-                if result == "FIELD_GOAL":
-                    home_field_goals_made += 1
-                    if field_goal_distance > home_longest_field_goal:
-                        home_longest_field_goal = field_goal_distance
-                home_field_goal_percentage = home_field_goals_made / home_field_goal_attempts
-            else:
-                away_field_goal_attempts += 1
-                if result == "FIELD_GOAL":
-                    away_field_goals_made += 1
-                    if field_goal_distance > away_longest_field_goal:
-                        away_longest_field_goal = field_goal_distance
-                away_field_goal_percentage = away_field_goals_made / away_field_goal_attempts
-
         # Calculate passing stats
-        elif play_type == "PASS":
+        if play_type == "PASS":
             if possession == "home":
                 home_passing_attempts += 1
                 if result == "GAIN":
@@ -167,6 +193,11 @@ def calculate_game_stats(plays, team_stats, playclock):
                     home_turnovers += 1
                     away_pick_sixes += 1
                     away_defensive_touchdowns += 1
+                if result == "TOUCHDOWN":
+                    home_passing_completions += 1
+                    home_passing_touchdowns += 1
+                if actual_result == "SAFETY":
+                    away_safeties_forced += 1
                 home_passing_percentage = home_passing_completions / home_passing_attempts
             else:
                 away_passing_attempts += 1
@@ -180,6 +211,11 @@ def calculate_game_stats(plays, team_stats, playclock):
                     away_turnovers += 1
                     home_pick_sixes += 1
                     home_defensive_touchdowns += 1
+                if result == "TOUCHDOWN":
+                    away_passing_completions += 1
+                    away_passing_touchdowns += 1
+                if actual_result == "SAFETY":
+                    home_safeties_forced += 1
                 away_passing_percentage = away_passing_completions / away_passing_attempts
 
         # Calculate rushing stats
@@ -200,6 +236,11 @@ def calculate_game_stats(plays, team_stats, playclock):
                     home_turnovers += 1
                     away_scoop_and_scores += 1
                     away_defensive_touchdowns += 1
+                if result == "TOUCHDOWN":
+                    home_rushing_successes += 1
+                    home_rushing_touchdowns += 1
+                if actual_result == "SAFETY":
+                    away_safeties_forced += 1
                 home_rushing_percentage = home_rushing_successes / home_rushing_attempts
             else:
                 away_rushing_attempts += 1
@@ -217,6 +258,11 @@ def calculate_game_stats(plays, team_stats, playclock):
                     away_turnovers += 1
                     home_scoop_and_scores += 1
                     home_defensive_touchdowns += 1
+                if result == "TOUCHDOWN":
+                    away_rushing_successes += 1
+                    away_rushing_touchdowns += 1
+                if actual_result == "SAFETY":
+                    home_safeties_forced += 1
                 away_rushing_percentage = away_rushing_successes / away_rushing_attempts
 
         # Calculate onside stats
@@ -244,27 +290,56 @@ def calculate_game_stats(plays, team_stats, playclock):
 
         elif play_type == "KICKOFF_NORMAL" or play_type == "KICKOFF_SQUIB":
             if possession == "home":
+                home_kickoffs += 1
                 if result == "TOUCHDOWN":
-                    away_kick_return_touchdowns += 1
-                if result == "TURNOVER":
-                    home_fumbles += 1
-                    home_turnovers += 1
-                if result == "TURNOVER_TOUCHDOWN":
-                    home_fumbles += 1
-                    home_turnovers += 1
-                    away_kickoff_defensive_touchdowns += 1
-                    away_defensive_touchdowns += 1
-            else:
-                if result == "TOUCHDOWN":
-                    home_kick_return_touchdowns += 1
-                if result == "TURNOVER":
-                    away_fumbles += 1
-                    away_turnovers += 1
-                if result == "TURNOVER_TOUCHDOWN":
-                    away_fumbles += 1
-                    away_turnovers += 1
+                    home_muffed_punts_recovered += 1
                     home_kickoff_defensive_touchdowns += 1
-                    home_defensive_touchdowns += 1
+                if result == "GAIN":
+                    away_fumbles += 1
+                    away_turnovers += 1
+                    home_kickoff_muff_recoveries += 1
+                if result == "TURNOVER_TOUCHDOWN":
+                    away_kick_return_touchdowns += 1
+                    home_total_kickoff_yards += 99
+                if result == "TOUCHBACK":
+                    home_kickoff_touchbacks += 1
+                    home_total_kickoff_yards += 25
+                if result == "KICK":
+                    home_total_kickoff_yards += 100-(ball_location + yards)
+            else:
+                away_kickoffs += 1
+                if result == "TOUCHDOWN":
+                    away_muffed_punts_recovered += 1
+                    away_kickoff_defensive_touchdowns += 1
+                if result == "GAIN":
+                    home_fumbles += 1
+                    home_turnovers += 1
+                    away_kickoff_muff_recoveries += 1
+                if result == "TURNOVER_TOUCHDOWN":
+                    home_kick_return_touchdowns += 1
+                    away_total_kickoff_yards += 99
+                if result == "TOUCHBACK":
+                    away_kickoff_touchbacks += 1
+                    away_total_kickoff_yards += 25
+                if result == "KICK":
+                    away_total_kickoff_yards += 100-(ball_location + yards)
+
+        # Calculate PAT stats
+        elif play_type == "PAT":
+            if possession == "home":
+                home_pat_attempts += 1
+                if result == "PAT":
+                    home_pat_successes += 1
+                if result == "TURNOVER_PAT":
+                    away_pat_two_point_return += 1
+                home_pat_percentage = home_pat_successes / home_pat_attempts
+            else:
+                away_pat_attempts += 1
+                if result == "PAT":
+                    away_pat_successes += 1
+                if result == "TURNOVER_PAT":
+                    home_pat_two_point_return += 1
+                away_pat_percentage = away_pat_successes / away_pat_attempts
 
         # Calculate two point stats
         elif play_type == "TWO_POINT":
@@ -272,10 +347,82 @@ def calculate_game_stats(plays, team_stats, playclock):
                 home_two_point_attempts += 1
                 if result == "TWO_POINT":
                     home_two_point_successes += 1
+                if result == "TURNOVER_PAT":
+                    away_pat_two_point_return += 1
             else:
                 away_two_point_attempts += 1
                 if result == "TWO_POINT":
                     away_two_point_successes += 1
+                if result == "TURNOVER_PAT":
+                    home_pat_two_point_return += 1
+
+        # Calculate field goal stats
+        elif play_type == "FIELD_GOAL":
+            field_goal_distance = 100-int(ball_location) + 17
+            if possession == "home":
+                home_field_goal_attempts += 1
+                if result == "FIELD_GOAL":
+                    home_field_goals_made += 1
+                    if field_goal_distance > home_longest_field_goal:
+                        home_longest_field_goal = field_goal_distance
+                if result == "TURNOVER_TOUCHDOWN":
+                    away_kick_sixes += 1
+                    away_defensive_touchdowns += 1
+                    away_blocked_field_goals += 1
+                if result == "TURNOVER":
+                    away_blocked_field_goals += 1
+                home_field_goal_percentage = home_field_goals_made / home_field_goal_attempts
+            else:
+                away_field_goal_attempts += 1
+                if result == "FIELD_GOAL":
+                    away_field_goals_made += 1
+                    if field_goal_distance > away_longest_field_goal:
+                        away_longest_field_goal = field_goal_distance
+                if result == "TURNOVER_TOUCHDOWN":
+                    home_kick_sixes += 1
+                    home_defensive_touchdowns += 1
+                    home_blocked_field_goals += 1
+                if result == "TURNOVER":
+                    home_blocked_field_goals += 1
+                away_field_goal_percentage = away_field_goals_made / away_field_goal_attempts
+
+        elif play_type == "PUNT":
+            if possession == "home":
+                home_total_punts += 1
+                if yards > home_longest_punt:
+                    home_longest_punt = yards
+                if result == "TOUCHBACK":
+                    home_punt_touchbacks += 1
+                if result == "GAIN":
+                    home_muffed_punts_recovered += 1
+                if result == "TURNOVER":
+                    away_blocked_punts += 1
+                if result == "TOUCHDOWN":
+                    home_muffed_punts_recovered += 1
+                    home_defensive_touchdowns += 1
+                if result == "TURNOVER_TOUCHDOWN":
+                    away_punt_return_touchdowns += 1
+                    home_total_punt_yards += 99
+                if result == "PUNT":
+                    home_total_punt_yards += yards
+            else:
+                away_total_punts += 1
+                if yards > away_longest_punt:
+                    away_longest_punt = yards
+                if result == "TOUCHBACK":
+                    away_punt_touchbacks += 1
+                if result == "GAIN":
+                    away_muffed_punts_recovered += 1
+                if result == "TURNOVER":
+                    home_blocked_punts += 1
+                if result == "TOUCHDOWN":
+                    away_muffed_punts_recovered += 1
+                    away_defensive_touchdowns += 1
+                if result == "TURNOVER_TOUCHDOWN":
+                    home_punt_return_touchdowns += 1
+                    away_total_punt_yards += 99
+                if result == "PUNT":
+                    away_total_punt_yards += yards
 
         if down == "3":
             if possession == "home":
@@ -309,6 +456,12 @@ def calculate_game_stats(plays, team_stats, playclock):
                 else:
                     if yards > away_longest_touchdown:
                         away_longest_touchdown = yards
+
+    # Calculate the average punt and kicks
+    home_average_punt = home_total_punt_yards / home_total_punts
+    away_average_punt = away_total_punt_yards / away_total_punts
+    home_kickoff_average_spot = home_total_kickoff_yards / home_kickoffs
+    away_kickoff_average_spot = away_total_kickoff_yards / away_kickoffs
 
     stats = {"num_plays": len(plays),
              "home_timeouts": team_stats["home_team_stats"]["timeouts"],
@@ -391,6 +544,42 @@ def calculate_game_stats(plays, team_stats, playclock):
              "away_pick_sixes": away_pick_sixes,
              "away_kickoff_defensive_touchdowns": away_kickoff_defensive_touchdowns,
              "win_probability": plays[-1]["win_probability"],
-             "game_length": game_length
+             "game_length": game_length,
+             "home_safeties_forced": home_safeties_forced,
+             "away_safeties_forced": away_safeties_forced,
+             "home_blocked_field_goals": home_blocked_field_goals,
+             "away_blocked_field_goals": away_blocked_field_goals,
+             "home_kick_sixes": home_kick_sixes,
+             "away_kick_sixes": away_kick_sixes,
+             "home_pat_attempts": home_pat_attempts,
+             "home_pat_successes": home_pat_successes,
+             "home_pat_percentage": home_pat_percentage,
+             "away_pat_attempts": away_pat_attempts,
+             "away_pat_successes": away_pat_successes,
+             "away_pat_percentage": away_pat_percentage,
+             "home_total_punts": home_total_punts,
+             "away_total_punts": away_total_punts,
+             "home_longest_punt": home_longest_punt,
+             "away_longest_punt": away_longest_punt,
+             "home_average_punt": home_average_punt,
+             "away_average_punt": away_average_punt,
+             "home_punt_touchbacks": home_punt_touchbacks,
+             "away_punt_touchbacks": away_punt_touchbacks,
+             "home_blocked_punts": home_blocked_punts,
+             "away_blocked_punts": away_blocked_punts,
+             "home_punt_return_touchdowns": home_punt_return_touchdowns,
+             "away_punt_return_touchdowns": away_punt_return_touchdowns,
+             "home_muffed_punts_recovered": home_muffed_punts_recovered,
+             "away_muffed_punts_recovered": away_muffed_punts_recovered,
+             "home_kickoff_average_spot": home_kickoff_average_spot,
+             "home_kickoffs": home_kickoffs,
+             "away_kickoff_average_spot": away_kickoff_average_spot,
+             "away_kickoffs": away_kickoffs,
+             "home_kickoff_touchbacks": home_kickoff_touchbacks,
+             "away_kickoff_touchbacks": away_kickoff_touchbacks,
+             "home_kickoff_muff_recoveries": home_kickoff_muff_recoveries,
+             "away_kickoff_muff_recoveries": away_kickoff_muff_recoveries,
              }
     return stats
+
+#TODO add punt stats

@@ -3,7 +3,7 @@ from fcfb.utils.exception_handling import async_exception_handler, DeoxysAPIErro
 from fcfb.utils.setup import setup
 
 config_data, r, logger = setup()
-GAME_PLAYS_PATH = "games/"
+GAMES_PATH = "games/"
 
 
 @async_exception_handler()
@@ -18,7 +18,7 @@ async def save_game(game_id, game):
     try:
         payload = f"add"
         headers = {"Content-Type": "application/json"}
-        endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload
+        endpoint = config_data['api']['url'] + GAMES_PATH + payload
         response = requests.post(endpoint, data=game, headers=headers)
 
         if response.status_code == 201 or response.status_code == 200:
@@ -41,7 +41,7 @@ async def get_game(game_id):
 
     try:
         payload = f"{game_id}"
-        endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload
+        endpoint = config_data['api']['url'] + GAMES_PATH + payload
         response = requests.get(endpoint)
 
         if response.status_code == 200:
@@ -49,6 +49,31 @@ async def get_game(game_id):
             return response.json()
         elif response.status_code == 404:
             logger.info(f"Game {game_id} not found")
+            return None
+        else:
+            raise DeoxysAPIError(f"HTTP {response.status_code} response {response.text}")
+
+    except Exception as e:
+        raise Exception(f"{e}")
+
+
+@async_exception_handler()
+async def get_unfinished_games():
+    """
+    Make API call to get the unfinished games from the database
+    :return:
+    """
+
+    try:
+        payload = f"unfinished"
+        endpoint = config_data['api']['url'] + GAMES_PATH + payload
+        response = requests.get(endpoint)
+
+        if response.status_code == 200:
+            logger.info(f"Unfinished games retrieved")
+            return response.json()
+        elif response.status_code == 404:
+            logger.info(f"No unfinished games found")
             return None
         else:
             raise DeoxysAPIError(f"HTTP {response.status_code} response {response.text}")
@@ -69,7 +94,7 @@ async def update_game(game_id, game):
     try:
         payload = f"update"
         headers = {"Content-Type": "application/json"}
-        endpoint = config_data['api']['url'] + GAME_PLAYS_PATH + payload
+        endpoint = config_data['api']['url'] + GAMES_PATH + payload
         response = requests.put(endpoint, data=game, headers=headers)
 
         if response.status_code == 200:

@@ -80,6 +80,11 @@ def extract_team_info(text):
     if "–" in team_info["away_team"]:
         team_info["away_team"].replace("–", "-")
 
+    if '&amp;' in team_info['home_team']:
+        team_info['home_team'] = team_info['home_team'].replace('&amp;', '&')
+    if '&amp;' in team_info['away_team']:
+        team_info['away_team'] = team_info['away_team'].replace('&amp;', '&')
+
     return team_info
 
 
@@ -175,7 +180,7 @@ def extract_end_of_game_info(text):
     game_complete = False
     game_in_ot = False
 
-    if "GAME COMPLETE" in text:
+    if "GAME COMPLETE" in text or "Game complete" in text:
         game_complete = True
     if "Q5" in text:
         game_in_ot = True
