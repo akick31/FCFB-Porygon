@@ -227,14 +227,14 @@ async def finalize_game(game_json):
     # TODO upload coach stats too
     # TODO upload team record too
     home_team_stats, away_team_stats = await calculate_team_stats(game_json)
-    home_team_stats = await get_team_stats(game_json["home_team"], game_json["season"])
-    if home_team_stats is None:
+    cur_home_team_stats = await get_team_stats(game_json["home_team"], game_json["season"])
+    if cur_home_team_stats is None:
         await create_team_stats(game_json["home_team"], game_json["season"], home_team_stats)
     else:
         await update_team_stats(game_json["home_team"], game_json["season"], home_team_stats)
 
-    away_team_stats = await get_team_stats(game_json["away_team"], game_json["season"])
-    if away_team_stats is None:
+    cur_away_team_stats = await get_team_stats(game_json["away_team"], game_json["season"])
+    if cur_away_team_statsg is None:
         await create_team_stats(game_json["away_team"], game_json["season"], away_team_stats)
     else:
         await update_team_stats(game_json["away_team"], game_json["season"], away_team_stats)
