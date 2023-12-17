@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 from fcfb.api.deoxys.games import save_game, get_game, update_game, get_unfinished_games
-from fcfb.api.deoxys.teams import update_team_stats
+from fcfb.api.deoxys.team_stats import update_team_stats, get_team_stats, create_team_stats
 from fcfb.discord.discord_interactions import get_channel_by_id, create_message
 from fcfb.stats.elo import calc_game_elo
 from fcfb.stats.team_stats import calculate_team_stats
@@ -224,6 +224,17 @@ async def finalize_game(game_json):
     """
 
     await calc_game_elo(game_json)
+    # TODO upload coach stats too
+    # TODO upload team record too
     home_team_stats, away_team_stats = await calculate_team_stats(game_json)
-    await update_team_stats(game_json["home_team"], home_team_stats)
-    await update_team_stats(game_json["away_team"], away_team_stats)
+    home_team_stats = await get_team_stats(game_json["home_team"], game_json["season"])
+    if home_team_stats is None:
+        await create_team_stats(game_json["home_team"], game_json["season"], home_team_stats)
+    else:
+        await update_team_stats(game_json["home_team"], game_json["season"], home_team_stats)
+
+    away_team_stats = await get_team_stats(game_json["away_team"], game_json["season"])
+    if away_team_stats is None:
+        await create_team_stats(game_json["away_team"], game_json["season"], away_team_stats)
+    else:
+        await update_team_stats(game_json["away_team"], game_json["season"], away_team_stats)
